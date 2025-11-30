@@ -7,7 +7,7 @@ import adminRouter from './routes/adminRoute.js'
 
 //app config
 const app = express()
-const port = process.env.port || 4000
+const port = process.env.PORT || 4000
 connectDB()
 connectCloudinary()
 
@@ -19,7 +19,7 @@ app.use(cors())
 app.use('/api/admin',adminRouter)
 
 app.get('/',(req,res)=>{
-    res.send("API WORKING")
+    res.send("backend")
 })
 
 app.listen(port,()=> console.log("Server Started",port))
