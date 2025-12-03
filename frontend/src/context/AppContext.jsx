@@ -45,6 +45,8 @@ const AppContextProvider = (props) => {
     }
   };
 
+  
+
   // Load doctors on page load
   useEffect(() => {
     getDoctorsData();
@@ -57,7 +59,7 @@ const AppContextProvider = (props) => {
   }, [token]);
 
   const value = {
-    doctors,
+    doctors,getDoctorsData,
     currentSymbol,
     token,
     setToken,
@@ -65,7 +67,7 @@ const AppContextProvider = (props) => {
     userData,
     setUserData,
     loadUserProfileData,
-    getDoctorsData
+
   };
 
   return (
@@ -76,4 +78,3 @@ const AppContextProvider = (props) => {
 };
 
 export default AppContextProvider;
-

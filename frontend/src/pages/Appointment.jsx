@@ -1,14 +1,21 @@
 import React, { useContext, useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { AppContext } from '../context/AppContext'
 import { assets } from '../assets/assets'
 import RelatedDoctors from '../components/RelatedDoctors'
+import { toast } from 'react-toastify'
+import axios from 'axios'
+
 
 const Appointment = () => {
 
   const {docId} =useParams() 
-  const {doctors,currentSymbol} =useContext(AppContext)
+  const {doctors,currentSymbol, backendUrl, token, getDoctorsData} =useContext(AppContext)
+  
+
   const daysOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
+
+  const navigate = useNavigate()
 
   const[docInfo,setDocInfo] = useState(null)
   const[docSolts,setDocSolts] = useState([])
@@ -49,12 +56,25 @@ const Appointment = () => {
 
       while(currentDate < endTime){
         let formattedTime = currentDate.toLocaleTimeString([], { hour: '2-digit' , minute: '2-digit'})
+        let day = currentDate.getDate()
+        let month = currentDate.getMonth()+1
+        let year = currentDate.getFullYear()
 
-        // add slot to array 
-        timeSlots.push({
+        const slotDate = day + '_' + month + '_' + year
+        const slotTime = formattedTime
+
+        const isSlotAvailable = docInfo.slots_booked[slotDate] && docInfo.slots_booked[slotDate].includes(slotTime) ? false : true
+
+        if(isSlotAvailable){
+          // add slot to array 
+          timeSlots.push({
           datetime: new Date(currentDate),
-          time: formattedTime
+          time: formattedTime,
+          slotDate: slotDate // ⬅️ ADD THIS!
         })
+      }
+
+        
 
         //Increment current time by 30 minutes
         currentDate.setMinutes(currentDate.getMinutes() + 30)
@@ -66,6 +86,65 @@ const Appointment = () => {
   }
 
 
+const bookAppointment = async () => {
+  try {
+     console.log("=== BOOK APPOINTMENT ===");
+        console.log("Request Body:", req.body);
+        console.log("slotDate from request:", req.body.slotDate);
+        console.log("Type of slotDate:", typeof req.body.slotDate);
+        
+        // Check if slotDate is actually "undefined" string
+        if (req.body.slotDate === "undefined") {
+            console.error("❌ ERROR: slotDate is string 'undefined'!");
+            return res.json({ 
+                success: false, 
+                message: 'Invalid date format' 
+            });
+        }
+    const date = docSolts[slotIndex][0].datetime
+    let day = date.getDate()
+    let month = date.getMonth() + 1
+    let year = date.getFullYear()
+
+    // ⚠️ CURRENT: This might be creating "undefined"
+    const slotDate = day + '_' + month + '_' + year
+    
+    // ✅ FIX: Add validation
+    if (!day || !month || !year) {
+      console.error('Date calculation error:', { day, month, year })
+      toast.error('Error calculating date')
+      return
+    }
+    
+    console.log('Date components:', { day, month, year })
+    console.log('slotDate to send:', slotDate)
+    
+   
+    const { data } = await axios.post(backendUrl+'/api/user/book-appointment', 
+      {
+        docId,        
+        slotDate, 
+        slotTime,
+        slotId: `slot_${docId}_${slotDate}_${slotTime.replace(':', '')}`
+      }, 
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    )    
+    console.log('DEBUG - Backend response:', data) // Add this too
+    
+    if(data.success){
+      toast.success(data.message)
+      getDoctorsData()
+      navigate('/my-appointments')
+    } else {
+      toast.error(data.message)
+    }
+  } catch (error) {
+    console.log(error)
+    toast.error(error.message)
+  }
+}
   useEffect(()=>{
     fetchDocInfo()
   },[doctors,docId])
@@ -77,6 +156,12 @@ const Appointment = () => {
 useEffect(()=>{
   console.log(docSolts);
 },[docSolts])
+
+
+
+
+
+
 
 
   return docInfo && (
@@ -132,7 +217,7 @@ useEffect(()=>{
             </p>
           ))}
         </div>
-        <button className='bg-primary text-white text-sm font-light px-14 py-3 rounded-full my-6 '>Book an appointment</button>
+        <button onClick={bookAppointment}className='bg-primary text-white text-sm font-light px-14 py-3 rounded-full my-6 '>Book an appointment</button>
       </div>
 
       {/* Listing Rlated Doctors */}

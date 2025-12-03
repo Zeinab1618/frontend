@@ -2,8 +2,13 @@ import jwt from 'jsonwebtoken'
 
 const authUser = async (req, res, next) => {
     try {
+
+        
+
         // Check for Authorization header
         const authHeader = req.headers.authorization
+
+        
 
         if (!authHeader) {
             return res.status(401).json({
